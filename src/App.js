@@ -9,6 +9,7 @@ class App extends React.Component {
     super(props);
     this.state = {
       screenText: "0",
+      storedValue: "0",
     };
   }
   handlePressDigit = (digit) => {
@@ -51,7 +52,7 @@ class App extends React.Component {
   hasOperator = (str) => {
     str = str.toString()
     return str.includes("+") || (str.length > 1 && str.substring(1).includes("-"))
-     || str.includes("/") || str.includes("*") || str.includes("%")
+      || str.includes("/") || str.includes("*") || str.includes("%")
   }
   handlePressAC = () => {
     this.setState((_) => {
@@ -101,6 +102,71 @@ class App extends React.Component {
       }
     })
   };
+  handlePressMC = () => {
+    this.setState(() => {
+      return {
+        storedValue: "0"
+      }
+    })
+  }
+  handlePressMR = () => {
+    this.setState((prev) => {
+      return {
+        screenText: prev.storedValue
+      }
+    })
+  }
+  handlePressMPlus = () => {
+    try {
+      this.setState((prev) => {
+        let res = parseFloat(prev.storedValue) + parseFloat(eval(prev.screenText));
+        return {
+          storedValue: res.toString()
+        }
+      })
+    }
+    catch {
+      this.setState((_) => {
+        return {
+          screenText: "error"
+        }
+      })
+    }
+  }
+  handlePressMMinus = () => {
+    try {
+      this.setState((prev) => {
+        let res = parseFloat(prev.storedValue) - parseFloat(eval(prev.screenText));
+        return {
+          storedValue: res.toString()
+        }
+      })
+    }
+    catch {
+      this.setState((_) => {
+        return {
+          screenText: "error"
+        }
+      })
+    }
+  }
+  handlePressMS = () => {
+    try {
+      this.setState((prev) => {
+        let res = parseFloat(eval(prev.screenText));
+        return {
+          storedValue: res.toString()
+        }
+      })
+    }
+    catch {
+      this.setState((_) => {
+        return {
+          screenText: "error"
+        }
+      })
+    }
+  }
   render() {
     return (
       <div>
@@ -112,6 +178,11 @@ class App extends React.Component {
           onPressDot={this.handlePressDot}
           onPressNegator={this.handlePressNegator}
           onPressResult={this.handlePressResult}
+          onPressMC={this.handlePressMC}
+          onPressMR={this.handlePressMR}
+          onPressMPlus={this.handlePressMPlus}
+          onPressMMinus={this.handlePressMMinus}
+          onPressMS={this.handlePressMS}
         />
       </div>
     );
