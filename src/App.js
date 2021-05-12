@@ -10,222 +10,187 @@ class App extends React.Component {
     this.state = {
       screenText: "0",
       storedValue: "0",
-      end: false,
+      firstNumber: 0,
+      secondNumber: 0,
+      operator: "",
+      isCalculationEnded: false,
     };
   }
+
   handlePressDigit = (digit) => {
     this.setState((prev) => {
-      const screenText = prev.screenText
-      let indexOfOp = this.findOperatorIndex(screenText)
-      if (indexOfOp !== -1 && screenText.length > indexOfOp + 1) {
-        let nextCharAfterOp = screenText.substring(indexOfOp + 1, indexOfOp + 2)
+      const screenText = prev.screenText.toString()
+      const indexOfOp = this._findOperatorIndex(screenText)
+      const containsOp = indexOfOp !== -1
+      const digitIsZero = digit == 0
+      if (containsOp && screenText.length > indexOfOp + 1) {
+        const nextCharAfterOp = screenText.charAt(indexOfOp + 1)
         if (nextCharAfterOp === "0") {
-          if (digit === "0") {
+          if (digitIsZero) {
             return
           } else {
             return {
-              screenText: screenText.substring(0, screenText.length - 1) + digit
+              screenText: screenText.substring(0, screenText.length - 1) + digit,
+              firstNumber: containsOp ? prev.firstNumber : parseFloat((screenText + digit).trim()),
+              secondNumber: containsOp ? parseFloat((screenText.substring(indexOfOp + 1) + digit).trim()) : prev.secondNumber,
+              isCalculationEnded: false
             }
           }
         }
       }
-
       return {
-        screenText: digit === "0" && screenText === "0" ? screenText : screenText !== "0" && !this.state.end && screenText !== "error" ? screenText + digit.toString() : digit.toString(),
-        end: false
+        screenText: digitIsZero && screenText === "0" ? screenText : screenText !== "0" && !this.state.isCalculationEnded && screenText !== "error" ? screenText + digit.toString() : digit.toString(),
+        firstNumber: containsOp ? prev.firstNumber : parseFloat((screenText + digit.toString()).trim()),
+        secondNumber: containsOp ? parseFloat((screenText.substring(indexOfOp + 1) + digit).trim()) : prev.secondNumber,
+        isCalculationEnded: false
       }
     })
   };
+
   handlePressOperator = (operator) => {
-    let screenText = this.state.screenText.toString();
-    const containsOperator = this.hasOperator(screenText)
-    if (containsOperator) {
-      this.setState((prev) => {
-        try {
-          return {
-            screenText: eval(prev.screenText).toString() + operator,
-            end: false
-          }
-        } catch {
-          const last = screenText.substring(screenText.length - 1)
-          if (this.hasOperator(last) || last === "-") {
-            return {
-              screenText: prev.screenText.toString().substring(0, screenText.length - 1) + operator,
-              end: false,
-            }
-          }
-          return {
-            screenText: "error"
-          }
-        }
-      })
-    } else {
-      this.setState((prev) => {
-        return {
-          screenText: prev.screenText + operator,
-          end: false,
-        }
-      })
-    }
+    const screenText = this.state.screenText.toString()
+    const indexOfOp = this._findOperatorIndex(screenText)
+    const containsOperator = indexOfOp !== -1
+    const isOperationLastChar = indexOfOp === screenText.length - 1
+
+    this.setState((prev) => {
+      return {
+        screenText: isOperationLastChar ?
+          screenText.substring(0, screenText.length - 1) + operator.toString() :
+          containsOperator ? this._calculate().toString() + operator.toString() : prev.screenText + operator.toString(),
+        operator: operator,
+        firstNumber: containsOperator ? this._calculate() : prev.firstNumber,
+        secondNumber: 0,
+        isCalculationEnded: false
+      }
+    })
   };
+
   handlePressAC = () => {
     this.setState((_) => {
       return {
-        screenText: "0"
+        screenText: "0",
+        firstNumber: 0,
+        secondNumber: 0,
       }
     })
   };
+
   handlePressDot = () => {
     this.setState((prev) => {
       const screenText = prev.screenText;
-      if (screenText.includes(".")) {
-        return;
-      }
-      return {
-        screenText: screenText + "."
+      const indexOfOp = this._findOperatorIndex(screenText)
+      const containsOp = indexOfOp !== -1
+      const firstNumStr = containsOp ? screenText.substring(0, indexOfOp).trim() : screenText
+      const secondNumStr = containsOp ? screenText.substring(indexOfOp + 1).trim() : ""
+      if ((!containsOp && firstNumStr.includes("."))
+        || (containsOp && secondNumStr.includes("."))) {
+        return
+      } else {
+        return {
+          screenText: screenText + ".",
+          firstNumber: containsOp ? prev.firstNumber : parseFloat(prev.firstNumber.toString() + "."),
+          secondNumber: containsOp ? parseFloat(prev.secondNumber.toString() + ".") : prev.secondNumber,
+        }
       }
     })
   };
+
   handlePressNegator = () => {
     this.setState((prev) => {
       const screenText = prev.screenText.toString().replace(/\s/g, '');
-      if (screenText === "0") {
+      const indexOfOp = this._findOperatorIndex(screenText)
+      const containsOp = indexOfOp !== -1
+      let firstNumber = prev.firstNumber
+      let secondNumber = prev.secondNumber
+      if ((!containsOp && firstNumber === 0) || (containsOp && secondNumber === 0)) {
         return
       }
-      if (this.hasOperator(screenText)) {
-        let indexOfOp = this.findOperatorIndex(screenText)
-
-        if (screenText.length > indexOfOp + 1) {
-          let nextCharAfterOp = screenText.substring(indexOfOp + 1, indexOfOp + 2)
-          if (nextCharAfterOp === "0") {
-            return
-          }
-          else if (nextCharAfterOp === "-") {
-            return {
-              screenText: screenText.substring(0, indexOfOp + 1) + screenText.substring(indexOfOp + 2, screenText.length)
-            }
-          } else {
-            return {
-              screenText: screenText.substring(0, indexOfOp + 1) + " -" + screenText.substring(indexOfOp + 1, screenText.length)
-            }
-          }
-        }
-        else if (screenText.length > indexOfOp + 1) {
-          return {
-            screenText: screenText.substring(0, indexOfOp + 1) + "-" + screenText.substring(indexOfOp + 1, screenText.length)
-          }
-        }
-      }
-      if (screenText.startsWith("-")) {
-        return {
-          screenText: screenText.substring(1)
-        }
+      if (containsOp) {
+        secondNumber = -secondNumber
       } else {
-        return {
-          screenText: "-" + screenText
-        }
+        firstNumber = -firstNumber
+      }
+      return {
+        screenText: containsOp ? firstNumber.toString() + prev.operator + (secondNumber < 0 ? " " : "") + secondNumber.toString() : firstNumber.toString(),
+        firstNumber: firstNumber,
+        secondNumber: secondNumber,
       }
     })
   };
+
   handlePressResult = () => {
-    this.setState((prev) => {
-      try {
-        return {
-          screenText: eval(prev.screenText).toString(),
-          end: true,
-        }
-      } catch {
-        const screenText = prev.screenText
-        let indexOfOp = this.findOperatorIndex(screenText)
-        if (indexOfOp === screenText.length - 1) {
-          return {
-            screenText: screenText.substring(0, screenText.length - 1)
-          }
-        }
-        return {
-          screenText: "error"
-        }
+    const result = this._calculate()
+    this.setState((_) => {
+      return {
+        screenText: result.toString(),
+        firstNumber: result,
+        secondNumber: 0,
+        isCalculationEnded: true,
       }
     })
   };
+
   handlePressMC = () => {
     this.setState(() => {
       return {
         storedValue: "0",
-        end: true,
+        isCalculationEnded: true,
       }
     })
   }
+
   handlePressMR = () => {
     this.setState((prev) => {
+      const value = prev.storedValue
       return {
-        screenText: prev.storedValue,
-        end: true,
+        screenText: value,
+        firstNumber: parseFloat(value),
+        isCalculationEnded: true,
       }
     })
   }
+
   handlePressMPlus = () => {
-    try {
-      this.setState((prev) => {
-        let res = parseFloat(prev.storedValue) + parseFloat(eval(prev.screenText));
-        return {
-          storedValue: res.toString(),
-          end: true,
-        }
-      })
-    }
-    catch {
-      this.setState((_) => {
-        return {
-          screenText: "error"
-        }
-      })
-    }
+    this.setState((prev) => {
+      const res = parseFloat(prev.storedValue) + parseFloat(this._valueToStore(prev));
+      return {
+        storedValue: res.toString(),
+        isCalculationEnded: true,
+      }
+    })
   }
+
   handlePressMMinus = () => {
-    try {
-      this.setState((prev) => {
-        let res = parseFloat(prev.storedValue) - parseFloat(eval(prev.screenText));
-        return {
-          storedValue: res.toString(),
-          end: true,
-        }
-      })
-    }
-    catch {
-      this.setState((_) => {
-        return {
-          screenText: "error"
-        }
-      })
-    }
+    this.setState((prev) => {
+      const res = parseFloat(prev.storedValue) - parseFloat(this._valueToStore(prev));
+      return {
+        storedValue: res.toString(),
+        isCalculationEnded: true,
+      }
+    })
   }
+
   handlePressMS = () => {
-    try {
-      this.setState((prev) => {
-        let res = parseFloat(eval(prev.screenText));
-        return {
-          storedValue: res.toString(),
-          end: true,
-        }
-      })
-    }
-    catch {
-      this.setState((_) => {
-        return {
-          screenText: "error"
-        }
-      })
-    }
+    this.setState((prev) => {
+      const value = this._valueToStore(prev)
+      return {
+        storedValue: value,
+        isCalculationEnded: true,
+      }
+    })
   }
-  hasOperator = (str) => {
-    let text = str.toString()
-    return text.includes("+") || (text.length > 1 && text.substring(1).includes("-"))
-      || text.includes("/") || text.includes("*") || text.includes("%")
+
+  _valueToStore = (prev) => {
+    const screenText = prev.screenText
+    const indexOfOp = this._findOperatorIndex(screenText)
+    const containsOp = indexOfOp !== -1
+    return containsOp ? (screenText.length - 1 === indexOfOp ? screenText.substring(0, screenText.length - 1) : prev.secondNumber.toString()) : screenText
   }
-  findOperatorIndex = (str) => {
+
+  _findOperatorIndex = (str) => {
     let text = str.toString()
-    let operators = ["+", "*", "/"]
+    const operators = ["+", "*", "/"]
     let res = -1;
     for (let i = 0; i < operators.length; i++) {
       res = text.indexOf(operators[i])
@@ -237,9 +202,36 @@ class App extends React.Component {
       text = text.substring(1)
       res = text.indexOf("-")
     }
-    
     return res !== -1 ? res + 1 : res;
   }
+
+  _calculate() {
+    const firstNumber = this.state.firstNumber
+    const secondNumber = this.state.secondNumber
+    const operator = this.state.operator
+    let result = 0
+    switch (operator) {
+      case "+":
+        result = firstNumber + secondNumber
+        break
+      case "-":
+        result = firstNumber - secondNumber
+        break
+      case "*":
+        result = firstNumber * secondNumber
+        break
+      case "/":
+        if (secondNumber === 0) {
+          return "error"
+        }
+        result = firstNumber / secondNumber
+        break
+      default:
+        result = 0
+    }
+    return result
+  }
+
   render() {
     return (
       <div>
