@@ -190,7 +190,7 @@ class App extends React.Component {
 
   _findOperatorIndex = (str) => {
     let text = str.toString()
-    const operators = ["+", "*", "/"]
+    const operators = ["+", "*", "/", "%"]
     let res = -1;
     for (let i = 0; i < operators.length; i++) {
       res = text.indexOf(operators[i])
@@ -225,6 +225,16 @@ class App extends React.Component {
           return "error"
         }
         result = firstNumber / secondNumber
+        break
+      case "%": 
+        if (secondNumber === 0) {
+          return "error"
+        }
+        try {
+          result = firstNumber % secondNumber
+        } catch {
+          return "error"
+        }
         break
       default:
         result = 0
