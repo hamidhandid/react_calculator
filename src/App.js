@@ -55,7 +55,6 @@ class App extends React.Component {
     const isOperationLastChar = indexOfOp === screenText.length - 1
 
     this.setState((prev) => {
-      console.log(`firstNumber in operator: ${prev.firstNumber}`)
       return {
         screenText: isOperationLastChar ?
           screenText.substring(0, screenText.length - 1) + operator.toString() :
@@ -154,12 +153,8 @@ class App extends React.Component {
       const screenText = prev.screenText
       const containsOp = this._findOperatorIndex(screenText) !== -1
       const value = prev.storedValue
-      console.log(`containsOp: ${containsOp}`)
-      console.log(`prev first number: ${prev.firstNumber}`)
       const firstNumber = !containsOp ? parseFloat(value) : prev.firstNumber
       const secondNumber = containsOp ? parseFloat(value) : prev.secondNumber
-      console.log(`firstNumber: ${firstNumber}`)
-      console.log(`secondNumber: ${secondNumber}`)
       return {
         screenText: containsOp ? firstNumber.toString() + prev.operator + secondNumber.toString() : firstNumber.toString(),
         firstNumber: firstNumber,
