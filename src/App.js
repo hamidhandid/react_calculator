@@ -23,6 +23,7 @@ class App extends React.Component {
       const indexOfOp = this._findOperatorIndex(screenText)
       const containsOp = indexOfOp !== -1
       const digitIsZero = digit === 0 || digit === "0"
+      const isCalculationEnded = prev.isCalculationEnded
       if (containsOp && screenText.length > indexOfOp + 1) {
         const nextCharAfterOp = screenText.charAt(indexOfOp + 1)
         if (nextCharAfterOp === "0") {
@@ -31,8 +32,8 @@ class App extends React.Component {
           } else {
             return {
               screenText: screenText.substring(0, screenText.length - 1) + digit,
-              firstNumber: containsOp ? prev.firstNumber : parseFloat((screenText + digit).trim()),
-              secondNumber: containsOp ? parseFloat((screenText.substring(indexOfOp + 1) + digit).trim()) : prev.secondNumber,
+              firstNumber: prev.firstNumber,
+              secondNumber: parseFloat((screenText.substring(indexOfOp + 1) + digit).trim()),
               isCalculationEnded: false
             }
           }
@@ -40,7 +41,7 @@ class App extends React.Component {
       }
       return {
         screenText: digitIsZero && screenText === "0" ? screenText : screenText !== "0" && !this.state.isCalculationEnded && !screenText.includes("error") ? screenText + digit.toString() : digit.toString(),
-        firstNumber: containsOp ? prev.firstNumber : parseFloat((screenText + digit.toString()).trim()),
+        firstNumber: isCalculationEnded ? parseFloat(digit) : containsOp ? prev.firstNumber : parseFloat((screenText + digit.toString()).trim()),
         secondNumber: containsOp ? parseFloat((screenText.substring(indexOfOp + 1) + digit).trim()) : prev.secondNumber,
         isCalculationEnded: false
       }
@@ -54,7 +55,7 @@ class App extends React.Component {
     const isOperationLastChar = indexOfOp === screenText.length - 1
 
     this.setState((prev) => {
-      console.log(prev.screenText)
+      console.log(`firstNumber in operator: ${prev.firstNumber}`)
       return {
         screenText: isOperationLastChar ?
           screenText.substring(0, screenText.length - 1) + operator.toString() :
@@ -150,10 +151,19 @@ class App extends React.Component {
 
   handlePressMR = () => {
     this.setState((prev) => {
+      const screenText = prev.screenText
+      const containsOp = this._findOperatorIndex(screenText) !== -1
       const value = prev.storedValue
+      console.log(`containsOp: ${containsOp}`)
+      console.log(`prev first number: ${prev.firstNumber}`)
+      const firstNumber = !containsOp ? parseFloat(value) : prev.firstNumber
+      const secondNumber = containsOp ? parseFloat(value) : prev.secondNumber
+      console.log(`firstNumber: ${firstNumber}`)
+      console.log(`secondNumber: ${secondNumber}`)
       return {
-        screenText: value,
-        firstNumber: parseFloat(value),
+        screenText: containsOp ? firstNumber.toString() + prev.operator + secondNumber.toString() : firstNumber.toString(),
+        firstNumber: firstNumber,
+        secondNumber: secondNumber,
         isCalculationEnded: true,
       }
     })
