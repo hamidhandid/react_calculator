@@ -189,7 +189,7 @@ class App extends React.Component {
       const value = this._valueToStore(prev)
       return {
         storedValue: value,
-        isCalculationEnded: true,
+        isCalculationEnded: this._findOperatorIndex(prev.screenText.toString()) === -1,
       }
     })
   }
