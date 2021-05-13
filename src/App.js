@@ -24,23 +24,14 @@ class App extends React.Component {
       const containsOp = indexOfOp !== -1
       const digitIsZero = digit === 0 || digit === "0"
       const isCalculationEnded = prev.isCalculationEnded
-      if (containsOp && screenText.length > indexOfOp + 1) {
-        const nextCharAfterOp = screenText.charAt(indexOfOp + 1)
-        if (nextCharAfterOp === "0") {
-          if (digitIsZero) {
-            return
-          } else {
-            return {
-              screenText: screenText.substring(0, screenText.length - 1) + digit,
-              firstNumber: prev.firstNumber,
-              secondNumber: parseFloat((screenText.substring(indexOfOp + 1) + digit).trim()),
-              isCalculationEnded: false
-            }
-          }
-        }
+      if (digitIsZero) {
+        if ((containsOp && prev.secondNumber === 0 && screenText.length - 1 >= indexOfOp + 1 &&
+          screenText.charAt(indexOfOp + 1) === "0" && !screenText.substring(indexOfOp + 1, screenText.length).includes("."))
+          || (!containsOp && prev.firstNumber == 0 && !screenText.includes(".")))
+          return
       }
       return {
-        screenText: digitIsZero && screenText === "0" ? screenText : screenText !== "0" && !this.state.isCalculationEnded && !screenText.includes("error") ? screenText + digit.toString() : digit.toString(),
+        screenText: screenText !== "0" && !this.state.isCalculationEnded && !screenText.includes("error") ? screenText + digit.toString() : digit.toString(),
         firstNumber: isCalculationEnded ? parseFloat(digit) : containsOp ? prev.firstNumber : parseFloat((screenText + digit.toString()).trim()),
         secondNumber: containsOp ? parseFloat((screenText.substring(indexOfOp + 1) + digit).trim()) : prev.secondNumber,
         isCalculationEnded: false
@@ -61,7 +52,7 @@ class App extends React.Component {
           containsOperator ? (this._calculate().toString() !== "error" ? this._calculate().toString() + operator.toString() : "error")
             : (prev.screenText !== "error" ? prev.screenText + operator.toString() : "error"),
         operator: operator,
-        firstNumber: containsOperator ? parseFloat(this._calculate()) : prev.firstNumber,
+        firstNumber: containsOperator && (!isOperationLastChar) ? parseFloat(this._calculate()) : prev.firstNumber,
         secondNumber: 0,
         isCalculationEnded: false
       }
@@ -85,14 +76,15 @@ class App extends React.Component {
       const containsOp = indexOfOp !== -1
       const firstNumStr = containsOp ? screenText.substring(0, indexOfOp).trim() : screenText
       const secondNumStr = containsOp ? screenText.substring(indexOfOp + 1).trim() : ""
-      if ((!containsOp && firstNumStr.includes("."))
-        || (containsOp && secondNumStr.includes("."))) {
+      if (!prev.isCalculationEnded &&
+        ((!containsOp && firstNumStr.includes(".")) || (containsOp && secondNumStr.includes(".")))) {
         return
       } else {
         return {
-          screenText: !screenText.includes("error") ? screenText + "." : screenText,
+          screenText: prev.isCalculationEnded ? "0." : !screenText.includes("error") ? screenText + "."  : screenText,
           firstNumber: containsOp ? prev.firstNumber : parseFloat(prev.firstNumber.toString() + "."),
           secondNumber: containsOp ? parseFloat(prev.secondNumber.toString() + ".") : prev.secondNumber,
+          isCalculationEnded: false,
         }
       }
     })
