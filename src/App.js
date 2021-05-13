@@ -22,7 +22,7 @@ class App extends React.Component {
       const screenText = prev.screenText.toString()
       const indexOfOp = this._findOperatorIndex(screenText)
       const containsOp = indexOfOp !== -1
-      const digitIsZero = digit == 0
+      const digitIsZero = digit === 0 || digit === "0"
       if (containsOp && screenText.length > indexOfOp + 1) {
         const nextCharAfterOp = screenText.charAt(indexOfOp + 1)
         if (nextCharAfterOp === "0") {
@@ -39,7 +39,7 @@ class App extends React.Component {
         }
       }
       return {
-        screenText: digitIsZero && screenText === "0" ? screenText : screenText !== "0" && !this.state.isCalculationEnded && screenText !== "error" ? screenText + digit.toString() : digit.toString(),
+        screenText: digitIsZero && screenText === "0" ? screenText : screenText !== "0" && !this.state.isCalculationEnded && !screenText.includes("error") ? screenText + digit.toString() : digit.toString(),
         firstNumber: containsOp ? prev.firstNumber : parseFloat((screenText + digit.toString()).trim()),
         secondNumber: containsOp ? parseFloat((screenText.substring(indexOfOp + 1) + digit).trim()) : prev.secondNumber,
         isCalculationEnded: false
@@ -54,12 +54,14 @@ class App extends React.Component {
     const isOperationLastChar = indexOfOp === screenText.length - 1
 
     this.setState((prev) => {
+      console.log(prev.screenText)
       return {
         screenText: isOperationLastChar ?
           screenText.substring(0, screenText.length - 1) + operator.toString() :
-          containsOperator ? this._calculate().toString() + operator.toString() : prev.screenText + operator.toString(),
+          containsOperator ? (this._calculate().toString() !== "error" ? this._calculate().toString() + operator.toString() : "error")
+            : (prev.screenText !== "error" ? prev.screenText + operator.toString() : "error"),
         operator: operator,
-        firstNumber: containsOperator ? this._calculate() : prev.firstNumber,
+        firstNumber: containsOperator ? parseFloat(this._calculate()) : prev.firstNumber,
         secondNumber: 0,
         isCalculationEnded: false
       }
@@ -88,7 +90,7 @@ class App extends React.Component {
         return
       } else {
         return {
-          screenText: screenText + ".",
+          screenText: !screenText.includes("error") ? screenText + "." : screenText,
           firstNumber: containsOp ? prev.firstNumber : parseFloat(prev.firstNumber.toString() + "."),
           secondNumber: containsOp ? parseFloat(prev.secondNumber.toString() + ".") : prev.secondNumber,
         }
@@ -112,7 +114,7 @@ class App extends React.Component {
         firstNumber = -firstNumber
       }
       return {
-        screenText: containsOp ? firstNumber.toString() + prev.operator + (secondNumber < 0 ? " " : "") + secondNumber.toString() : firstNumber.toString(),
+        screenText: !screenText.includes("error") ? (containsOp ? firstNumber.toString() + prev.operator + (secondNumber < 0 ? " " : "") + secondNumber.toString() : firstNumber.toString()) : "error",
         firstNumber: firstNumber,
         secondNumber: secondNumber,
       }
@@ -120,11 +122,17 @@ class App extends React.Component {
   };
 
   handlePressResult = () => {
-    const result = this._calculate()
-    this.setState((_) => {
+    this.setState((prev) => {
+      const screenText = prev.screenText
+      const indexOfOp = this._findOperatorIndex(screenText.toString())
+      const isOperationLastChar = indexOfOp === screenText.length - 1
+      const containsOp = indexOfOp !== -1
+      const result = isOperationLastChar ?
+        screenText.substring(0, screenText.length - 1) :
+        !containsOp ? screenText : this._calculate()
       return {
         screenText: result.toString(),
-        firstNumber: result,
+        firstNumber: parseFloat(result),
         secondNumber: 0,
         isCalculationEnded: true,
       }
@@ -226,7 +234,7 @@ class App extends React.Component {
         }
         result = firstNumber / secondNumber
         break
-      case "%": 
+      case "%":
         if (secondNumber === 0) {
           return "error"
         }
